@@ -1,5 +1,4 @@
-//ME24I1004 VS GEETHA RANJANI
-#include<stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -7,66 +6,57 @@
 #define STORAGE_SIZE 5
 
 // -----------------------------
-// a) Part Delivery (Queue) + Bot Task Manager (Stack)
+// a) Part Delivery and Bot Construction Order (Queue + Stack using Arrays)
 // -----------------------------
-int queue[MAX_PARTS];
-int front=-1;
-int rear=-1;
-//Enqueue function for Part Delivery System
-void enqueue(char x){
-	if(rear==MAX_PARTS-1){
-		printf("OVERFLOW");
-	}
-	else if(front==-1&&rear==-1){
-		front=rear=0;
-		queue[rear]=x;
-	}
-}
-//Dequeue function for art Delivery System
-void dequeue(){
-	if(front==-1&&rear==-1){
-		printf("UNDERFLOW");
-	}
-	else if(front==rear){
-		front=rear=-1;
-	}
-	else{
-		printf("%d", queue[front]);
-		front++
-	}
+char* partQueue[MAX_PARTS];
+int front = -1, rear = -1;
+
+void enqueue(char* part) {
+    if (rear == MAX_PARTS - 1) {
+        printf("Queue is full! Cannot add more parts.\n");
+        return;
+    }
+    if (front == -1) front = 0;
+    rear++;
+    partQueue[rear] = part;
 }
 
-int stack[MAX_PARTS];
-int top=-1;
-//Push function for Part Delivery System
-void push(char x){
-	if(top==-1){
-		printf("OVERFLOW");
-	}
-	else{
-		top++;
-		stack[top]=x;
-	}
+char* dequeue() {
+    if (front == -1 || front > rear) {
+        printf("Queue is empty!\n");
+        return NULL;
+    }
+    return partQueue[front++];
 }
-//Pop function for Part Delivery System
-void pop(){
-	int item;
-	if(top==-1){
-		printf("UNDERFLOW");
-	}
-	else{
-		printf("%d", stack[top]);
-	}
-}
-// -----------------------------
-// b) Assembly Storage Unit (Array)
-// -----------------------------
-char storage[STORAGE_SIZE];
-int storageIndex= 0;
 
-void storeHabitat(char name) {
-    storage[storageIndex]= name;
-    printf("Storing %s at slot %d\n", name, storageIndex);
+char* partStack[MAX_PARTS];
+int top = -1;
+
+void push(char* part) {
+    if (top == MAX_PARTS - 1) {
+        printf("Stack overflow! Too many parts to install.\n");
+        return;
+    }
+    top++;
+    partStack[top] = part;
+}
+
+char* pop() {
+    if (top == -1) {
+        return NULL;
+    }
+    return partStack[top--];
+}
+
+// -----------------------------
+// b) Assembly Storage Unit (Circular Array)
+// -----------------------------
+char* habitatStorage[STORAGE_SIZE];
+int storageIndex = 0;
+
+void storeHabitat(char* habitat) {
+    habitatStorage[storageIndex] = habitat;
+    printf("Storing habitat: %s at slot %d\n", habitat, storageIndex);
     storageIndex = (storageIndex + 1) % STORAGE_SIZE;
 }
 
@@ -74,163 +64,217 @@ void storeHabitat(char name) {
 // c) Damaged -> Repaired Tracker
 // -----------------------------
 typedef struct SinglyNode {
-    char name;
+    char* name;
     struct SinglyNode* next;
 } SinglyNode;
 
 typedef struct DoublyNode {
-    char name;
+    char* name;
     struct DoublyNode* next;
     struct DoublyNode* prev;
 } DoublyNode;
 
-SinglyNode * insertDamaged(SinglyNode* head, char name) {
+SinglyNode* insertDamaged(SinglyNode* head, char* name) {
     SinglyNode* newNode = malloc(sizeof(SinglyNode));
-    newNode->name= name;
-    newNode->next= head;
+    newNode->name = strdup(name);
+    newNode->next = head;
     return newNode;
 }
 
-SinglyNode* removeDamaged(SinglyNode* head, char name, int* found) {
-    SinglyNode *temp= head, *prev= NULL;
-    while (temp!=NULL) {
+SinglyNode* removeDamaged(SinglyNode* head, char* name, int* found) {
+    SinglyNode *temp = head, *prev = NULL;
+    while (temp != NULL) {
         if (strcmp(temp->name, name) == 0) {
-            	*found = 1;
-            	if (prev == NULL){
-            		return temp->next;
-				}
-            	prev->next = temp->next;
-            	free(temp);
-            	return head;
+            *found = 1;
+            if (prev == NULL) {
+                SinglyNode* next = temp->next;
+                free(temp->name);
+                free(temp);
+                return next;
+            } else {
+                prev->next = temp->next;
+                free(temp->name);
+                free(temp);
+                return head;
+            }
         }
-        prev= temp;
-        temp= temp->next;
+        prev = temp;
+        temp = temp->next;
     }
     return head;
 }
 
-DoublyNode* insertRepaired(DoublyNode *head, char name) {
-    DoublyNode *newNode= malloc(sizeof(DoublyNode));
-    newNode->name= name;
-    newNode->next= NULL;
-    newNode->prev= NULL;
+DoublyNode* insertRepaired(DoublyNode* head, char* name) {
+    DoublyNode* newNode = malloc(sizeof(DoublyNode));
+    newNode->name = strdup(name);
+    newNode->next = NULL;
+    newNode->prev = NULL;
 
-    if (head==NULL){
-    	return newNode;
-	}
-    DoublyNode *temp = head;
-    while (temp->next!= NULL){
-    	temp=temp->next;
-	}
-    temp->next= newNode;
-    newNode->prev= temp;
+    if (head == NULL) return newNode;
+
+    DoublyNode* temp = head;
+    while (temp->next != NULL) temp = temp->next;
+
+    temp->next = newNode;
+    newNode->prev = temp;
     return head;
 }
 
 void traverseForward(DoublyNode* head) {
-    while(head){
-        printf("Forward: %s\n", head->name);
+    while (head != NULL) {
+        printf("Repaired (forward): %s\n", head->name);
         head = head->next;
     }
 }
 
 void traverseBackward(DoublyNode* tail) {
-    while(tail){
-        printf("Backward: %s\n", tail->name);
+    while (tail != NULL) {
+        printf("Repaired (backward): %s\n", tail->name);
         tail = tail->prev;
     }
 }
 
 // -----------------------------
-// d) Circular Linked List: Priority Upgrades
+// d) Priority Upgrade Circular Linked List
 // -----------------------------
 typedef struct CircularNode {
-    char name;
+    char* name;
     struct CircularNode* next;
 } CircularNode;
 
-CircularNode* insertCircular(CircularNode* head, char name) {
+CircularNode* insertCircular(CircularNode* head, char* name) {
     CircularNode* newNode = malloc(sizeof(CircularNode));
-    newNode->name= name;
-    if (head==NULL) {
-        newNode->next=newNode;
+    newNode->name = strdup(name);
+
+    if (head == NULL) {
+        newNode->next = newNode;
         return newNode;
     }
-    CircularNode* temp=head;
-    while (temp->next!= head){
-    	temp= temp->next;
-	}
-    temp->next= newNode;
-    newNode->next= head;
+
+    CircularNode* temp = head;
+    while (temp->next != head) {
+        temp = temp->next;
+    }
+    temp->next = newNode;
+    newNode->next = head;
     return head;
 }
 
 void traverseCircular(CircularNode* head, int times) {
-    if (!head) return;
+    if (head == NULL) return;
+
     CircularNode* temp = head;
-    for (int i = 0; i < times; ++i) {
-        printf("Upgrading: %s\n", temp->name);
+    int i=0;
+    for (i; i < times; i++) {
+        printf("Upgrade cycle: %s\n", temp->name);
         temp = temp->next;
     }
 }
 
 // -----------------------------
-// MAIN FUNCTION
+// Main Menu System for User Interaction
 // -----------------------------
 int main() {
-    printf("=== Mars Habitat Builder Bot ===\n\n");
-
-    //TASK A
-    printf("\n[Task A] Construction Queue & Stack:\n");
-    char parts[MAX_PARTS] = {"Wall", "Roof", "Door", "Window", "Airlock", "Vent"};
-
-    for (int i = 0; i < MAX_PARTS; i++) enqueue(parts[i]);
-    for (int i = 0; i < MAX_PARTS; i++) push(dequeue());
-
-    char part;
-    while((part=pop())) {
-        printf("Installing: %s\n", part);
-    }
-    // LIFO fits because 'Vent' is installed last for air-sealing after core structure.
-
-    //TASK B
-    printf("\n[Task B] Habitat Storage (Circular Array):\n");
-    char habitats[7] = {"Hab1", "Hab2", "Hab3", "Hab4", "Hab5", "Hab6", "Hab7"};
-    for(int i = 0; i < 7; i++){
-    	storeHabitat(habitats[i]);
-	}
-    // Older habitats are overwritten due to settler arrival and limited Martian real estate.
-
-    //TASK C
-    printf("\n[Task C] Damaged and Repaired Habitat Tracker:\n");
-    SinglyNode* damagedList= NULL;
-    damagedList= insertDamaged(damagedList, "Hab6");
-    damagedList= insertDamaged(damagedList, "Hab3");
-
-    int found = 0;
-    damagedList= removeDamaged(damagedList, "Hab3", &found);
-
-    DoublyNode* repairedList= NULL;
-    if(found){
-    	repairedList= insertRepaired(repairedList, "Hab3");
-	}
-
-    traverseForward(repairedList);
-    DoublyNode* tail= repairedList;
-    while(tail && tail->next){
-    	tail = tail->next;
-	}
-    traverseBackward(tail);
-    printf("// Hab3’s door was cracked by a Martian dust storm, bots sealed it using polymer patches.\n");
-
-    //TASK D
-    printf("\n[Task D] Priority Upgrade Circular Tracker:\n");
+    int choice;
+    char* parts[MAX_PARTS] = {"Wall", "Roof", "Door", "Window", "Airlock", "Vent"};
+    char* habitats[7] = {"Hab1", "Hab2", "Hab3", "Hab4", "Hab5", "Hab6", "Hab7"};
+    SinglyNode* damagedList = NULL;
+    DoublyNode* repairedList = NULL;
     CircularNode* upgradeList = NULL;
-    upgradeList = insertCircular(upgradeList, "Hab1");
-    upgradeList = insertCircular(upgradeList, "Hab4");
-    traverseCircular(upgradeList, 4);
-    printf("// Hab1 got smart solar panels. Hab4 received a greenhouse dome for fresh produce.\n");
+
+    printf("=== Mars Habitat Construction Bot ===\n");
+
+    while (1) {
+        // Display the menu
+        printf("\nSelect an action:\n");
+        printf("1. Task A: Part Delivery and Bot Construction Order\n");
+        printf("2. Task B: Assembly Storage Unit\n");
+        printf("3. Task C: Damaged Habitat Tracker\n");
+        printf("4. Task D: Priority Upgrades\n");
+        printf("5. Exit\n");
+        printf("Enter your choice (1-5): ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: {
+                // Task A: Part Delivery and Bot Stack
+                printf("\n[Task A] Part Delivery Queue and Bot Stack:\n");
+
+                // Enqueue all parts
+                int i=0;
+                for (i; i < MAX_PARTS; i++) {
+                    enqueue(parts[i]);
+                }
+
+                // Dequeue and push onto stack
+                char* part;
+                while ((part = dequeue()) != NULL) {
+                    push(part);
+                }
+
+                // Pop from stack (LIFO order)
+                while ((part = pop()) != NULL) {
+                    printf("Bot installing: %s\n", part);
+                }
+
+                printf("Note: LIFO ensures 'Vent' is installed last to seal the structure after all major parts are set.\n");
+                break;
+            }
+            case 2: {
+                // Task B: Habitat Assembly Storage
+                printf("\n[Task B] Habitat Assembly Storage:\n");
+                int i=0;
+                for (i; i < 7; i++) {
+                    storeHabitat(habitats[i]);
+                }
+                printf("Note: Limited Martian land forces newer arrivals (Hab6 & Hab7) to overwrite older, settled habitats.\n");
+                break;
+            }
+            case 3: {
+                // Task C: Damaged Habitat Tracker
+                printf("\n[Task C] Damaged and Repaired Habitat Tracker:\n");
+
+                damagedList = insertDamaged(damagedList, "Hab6");
+                damagedList = insertDamaged(damagedList, "Hab3");
+
+                int found = 0;
+                damagedList = removeDamaged(damagedList, "Hab3", &found);
+
+                if (found) {
+                    repairedList = insertRepaired(repairedList, "Hab3");
+                }
+
+                // Traverse repaired list
+                traverseForward(repairedList);
+
+                DoublyNode* tail = repairedList;
+                while (tail && tail->next) {
+                    tail = tail->next;
+                }
+                traverseBackward(tail);
+
+                printf("Note: Hab3â€™s door cracked during a Martian dust storm. Repair bots patched it using a polymer sealant.\n");
+                break;
+            }
+            case 4: {
+                // Task D: Priority Habitat Upgrades
+                printf("\n[Task D] Priority Habitat Upgrades:\n");
+
+                upgradeList = insertCircular(upgradeList, "Hab1");
+                upgradeList = insertCircular(upgradeList, "Hab4");
+
+                traverseCircular(upgradeList, 4);
+
+                printf("Note: Hab1 was upgraded with solar panels, while Hab4 received a greenhouse dome for food.\n");
+                break;
+            }
+            case 5:
+                printf("Exiting program. Goodbye!\n");
+                return 0;
+            default:
+                printf("Invalid choice! Please enter a number between 1 and 5.\n");
+        }
+    }
 
     return 0;
 }
-
